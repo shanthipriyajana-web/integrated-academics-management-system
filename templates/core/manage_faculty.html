@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Manage Faculty{% endblock %}
+
+{% block content %}
+<div class="page-hdr">
+  <div>
+    <h4><i class="bi bi-person-badge-fill"></i> Manage Faculty</h4>
+    <p>Faculty for <strong>{{ user_dept }}</strong> — only visible and editable by this department.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Add form -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-hdr"><i class="bi bi-plus-circle-fill text-success"></i> Add Faculty</div>
+      <div class="card-body">
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add">
+          <input type="hidden" name="department" value="{{ user_dept }}">
+
+          <div class="mb-3">
+            <label class="form-label text-muted small">Department</label>
+            <div class="form-control bg-light text-muted">{{ user_dept }}</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Faculty Code</label>
+            {{ form.code }}
+            <small class="text-muted">Short uppercase code shown in timetable (e.g. AP, MU)</small>
+            {% if form.code.errors %}<div class="field-error">{{ form.code.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Full Name</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="field-error">{{ form.name.errors.0 }}</div>{% endif %}
+          </div>
+          <button class="btn btn-success w-100 fw-700">
+            <i class="bi bi-plus-lg me-1"></i>Add Faculty
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-hdr">
+        <i class="bi bi-list-ul"></i> Faculty Members — {{ user_dept }}
+        <span class="badge bg-primary ms-2">{{ faculty_list|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if not faculty_list %}
+          <div class="p-5 text-center text-muted">
+            <i class="bi bi-person-x fs-1 d-block mb-2 opacity-25"></i>
+            No faculty added yet for {{ user_dept }}.
+          </div>
+        {% else %}
+        <table class="table table-hover mb-0 tbl">
+          <thead>
+            <tr><th>#</th><th>Code</th><th>Full Name</th><th class="text-center">Subjects</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for f in faculty_list %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+              <td><span class="badge" style="background:#1a237e;font-size:.85rem;padding:4px 10px">{{ f.code }}</span></td>
+              <td class="fw-600">{{ f.name }}</td>
+              <td class="text-center">
+                <span class="badge bg-secondary">{{ f.subject_count }}</span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary py-0 px-2 fw-700"
+                        data-bs-toggle="modal" data-bs-target="#editFac{{ f.pk }}">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form method="POST" class="d-inline"
+                      onsubmit="return confirm('Remove {{ f.name }}? This will fail if they have subjects assigned.')">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="faculty_id" value="{{ f.pk }}">
+                  <button class="btn btn-sm btn-outline-danger py-0 px-2 fw-700 ms-1">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+
+            <!-- Edit modal -->
+            <div class="modal fade" id="editFac{{ f.pk }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title fw-800">Edit Faculty</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="faculty_id" value="{{ f.pk }}">
+                    <input type="hidden" name="department" value="{{ user_dept }}">
+                    <div class="modal-body row g-3">
+                      <div class="col-5">
+                        <label class="form-label">Code</label>
+                        <input name="code" class="form-control" value="{{ f.code }}" required>
+                      </div>
+                      <div class="col-7">
+                        <label class="form-label">Full Name</label>
+                        <input name="name" class="form-control" value="{{ f.name }}" required>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                      <button class="btn btn-primary btn-sm px-4 fw-700">Save Changes</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

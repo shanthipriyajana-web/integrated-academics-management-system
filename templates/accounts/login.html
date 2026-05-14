@@ -1,0 +1,278 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign In – VSU Timetable</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body {
+    min-height: 100vh; font-family: 'DM Sans', sans-serif;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(0,176,255,.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(26,35,126,.3) 0%, transparent 50%),
+      linear-gradient(135deg, #0d1b5e 0%, #1a237e 45%, #1565c0 100%);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .auth-wrap { width: 100%; max-width: 480px; animation: rise .6s cubic-bezier(.22,.68,0,1.2); }
+
+  .auth-head {
+    background: rgba(255,255,255,.08); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.15); border-radius: 20px 20px 0 0;
+    padding: 26px 28px 22px; text-align: center; color: white;
+  }
+  .auth-head img   { height: 64px; filter: drop-shadow(0 3px 10px rgba(0,0,0,.4)); margin-bottom: 10px; }
+  .auth-head h5    { font-weight: 800; font-size: 1.1rem; margin: 0 0 4px; }
+  .auth-head small { opacity: .6; font-size: .75rem; }
+
+  .tab-bar {
+    display: flex; background: rgba(255,255,255,.06);
+    border-left: 1px solid rgba(255,255,255,.12); border-right: 1px solid rgba(255,255,255,.12);
+  }
+  .tab-btn {
+    flex: 1; padding: 13px 10px; border: none;
+    background: transparent; color: rgba(255,255,255,.55);
+    font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: .88rem;
+    cursor: pointer; transition: .2s; border-bottom: 3px solid transparent;
+  }
+  .tab-btn.active { color: white; border-bottom-color: #00b0ff; background: rgba(255,255,255,.08); }
+  .tab-btn:hover:not(.active) { color: rgba(255,255,255,.8); background: rgba(255,255,255,.05); }
+
+  .auth-body {
+    background: white; border-radius: 0 0 20px 20px;
+    padding: 26px 28px 24px; box-shadow: 0 24px 60px rgba(0,0,0,.4);
+  }
+  .tab-pane { display: none; }
+  .tab-pane.show { display: block; }
+
+  .form-label { font-weight: 700; font-size: .8rem; color: #555; margin-bottom: 5px; }
+  .input-wrap { position: relative; }
+  .input-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; pointer-events: none; }
+  .form-control {
+    border-radius: 10px; padding: 10px 14px 10px 36px;
+    border: 1.5px solid #e0e7ef; font-size: .88rem; font-family: 'DM Sans', sans-serif;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .form-control:focus { border-color: #1565c0; box-shadow: 0 0 0 3px rgba(21,101,192,.12); outline: none; }
+  .field-error { color: #e53935; font-size: .75rem; margin-top: 4px; }
+
+  .strength-bar  { height: 4px; border-radius: 4px; background: #eee; overflow: hidden; margin-top: 5px; }
+  .strength-fill { height: 100%; width: 0; transition: .3s; border-radius: 4px; }
+
+  .btn-auth {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-weight: 800; font-size: .95rem;
+    color: white; cursor: pointer; transition: .2s; margin-top: 4px;
+  }
+  .btn-auth.blue  { background: linear-gradient(135deg, #1565c0, #0d47a1); }
+  .btn-auth.green { background: linear-gradient(135deg, #2e7d32, #1b5e20); }
+  .btn-auth:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+
+  .switch-line { text-align: center; font-size: .82rem; color: #888; margin-top: 14px; }
+  .switch-line a { color: #1565c0; font-weight: 700; cursor: pointer; text-decoration: none; }
+  .switch-line a:hover { text-decoration: underline; }
+
+  .info-note {
+    background: #e8f0fe; border: 1px solid #bbdefb; border-radius: 10px;
+    padding: 10px 14px; font-size: .78rem; color: #1565c0; margin-bottom: 18px;
+  }
+  .info-note i { margin-right: 5px; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="auth-wrap">
+
+  <div class="auth-head">
+    <img src="https://upload.wikimedia.org/wikipedia/en/7/70/Vikrama_Simhapuri_University_Logo.png" alt="VSU">
+    <h5>Vikrama Simhapuri University, Nellore</h5>
+    <small>Academics Management System</small>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn {% if active_tab == 'login' %}active{% endif %}"
+            id="btn-login" onclick="switchTab('login')">🔑 &nbsp;Sign In</button>
+    <button class="tab-btn {% if active_tab == 'register' %}active{% endif %}"
+            id="btn-register" onclick="switchTab('register')">✏️ &nbsp;Register</button>
+  </div>
+
+  <div class="auth-body">
+
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }} alert-dismissible d-flex gap-2 align-items-center py-2 mb-3 rounded-3" style="font-size:.84rem">
+          <i class="bi bi-info-circle-fill"></i>
+          <span>{{ msg }}</span>
+          <button type="button" class="btn-close ms-auto btn-close-sm" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- ── LOGIN ── -->
+    <div class="tab-pane {% if active_tab == 'login' %}show{% endif %}" id="pane-login">
+      <form method="POST" action="{% url 'login' %}" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="login">
+
+        <div class="mb-3">
+          <label class="form-label">Email Address</label>
+          <div class="input-wrap">
+            <i class="bi bi-envelope-fill"></i>
+            <input type="email" name="username" class="form-control"
+                   placeholder="you@vsu.edu" required autofocus
+                   value="{{ login_form.username.value|default:'' }}">
+          </div>
+          {% if login_form.username.errors %}
+            <div class="field-error">{{ login_form.username.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-1">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock-fill"></i>
+            <input type="password" name="password" class="form-control"
+                   placeholder="Enter your password" required>
+          </div>
+          {% if login_form.non_field_errors %}
+            <div class="field-error mt-1">{{ login_form.non_field_errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Forgot password link -->
+        <div style="text-align:right;margin-bottom:16px;margin-top:6px;">
+          <a href="{% url 'forgot_password' %}" style="font-size:.78rem;color:#1565c0;text-decoration:none;font-weight:600;">
+            <i class="bi bi-key-fill"></i> Forgot Password?
+          </a>
+        </div>
+
+        <button class="btn-auth blue">Sign In &nbsp;→</button>
+      </form>
+      <div class="switch-line">No account? <a onclick="switchTab('register')">Register here</a></div>
+    </div>
+
+    <!-- ── REGISTER ── -->
+    <div class="tab-pane {% if active_tab == 'register' %}show{% endif %}" id="pane-register">
+
+      <div class="info-note">
+        <i class="bi bi-info-circle-fill"></i>
+        Registration is restricted to <strong>pre-approved emails</strong> only.
+        Your email must be added by an administrator before you can register.
+      </div>
+
+      <form method="POST" action="{% url 'login' %}" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="register">
+
+        <div class="mb-3">
+          <label class="form-label">Full Name</label>
+          <div class="input-wrap">
+            <i class="bi bi-person-fill"></i>
+            <input type="text" name="full_name" class="form-control"
+                   placeholder="Dr. / Mr. / Ms. Your Full Name" required
+                   value="{{ register_form.full_name.value|default:'' }}">
+          </div>
+          {% if register_form.full_name.errors %}
+            <div class="field-error">{{ register_form.full_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">
+            Email Address
+            <small class="text-muted fw-normal">(must be pre-approved by admin)</small>
+          </label>
+          <div class="input-wrap">
+            <i class="bi bi-envelope-fill"></i>
+            <input type="email" name="email" class="form-control"
+                   placeholder="you@vsu.edu" required
+                   value="{{ register_form.email.value|default:'' }}">
+          </div>
+          {% if register_form.email.errors %}
+            <div class="field-error">{{ register_form.email.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock-fill"></i>
+            <input type="password" name="password" id="reg-pw" class="form-control"
+                   placeholder="Min 6 characters" required minlength="6"
+                   oninput="checkStrength(this.value)">
+          </div>
+          <div class="strength-bar"><div class="strength-fill" id="s-fill"></div></div>
+          <small id="s-lbl" style="font-size:.72rem"></small>
+          {% if register_form.password.errors %}
+            <div class="field-error">{{ register_form.password.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-wrap">
+            <i class="bi bi-shield-lock-fill"></i>
+            <input type="password" name="confirm_password" id="reg-cfm" class="form-control"
+                   placeholder="Re-enter password" required oninput="checkMatch()">
+          </div>
+          <small id="m-lbl" style="font-size:.72rem"></small>
+          {% if register_form.confirm_password.errors %}
+            <div class="field-error">{{ register_form.confirm_password.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        {% if register_form.non_field_errors %}
+          <div class="field-error mb-3">{{ register_form.non_field_errors.0 }}</div>
+        {% endif %}
+
+        <button class="btn-auth green">Create Account &nbsp;→</button>
+      </form>
+      <div class="switch-line">Have an account? <a onclick="switchTab('login')">Sign in here</a></div>
+    </div>
+
+  </div><!-- auth-body -->
+</div><!-- auth-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function switchTab(t) {
+  ['login','register'].forEach(x => {
+    document.getElementById('pane-'+x).classList.remove('show');
+    document.getElementById('btn-'+x).classList.remove('active');
+  });
+  document.getElementById('pane-'+t).classList.add('show');
+  document.getElementById('btn-'+t).classList.add('active');
+}
+
+function checkStrength(v) {
+  let s = [v.length>=6, v.length>=10, /[A-Z]/.test(v), /[0-9]/.test(v), /[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
+  const lvl = [{w:'20%',c:'#f44336',t:'Very weak'},{w:'40%',c:'#ff7043',t:'Weak'},
+               {w:'60%',c:'#ffb300',t:'Fair'},{w:'80%',c:'#66bb6a',t:'Strong'},{w:'100%',c:'#2e7d32',t:'Very strong'}];
+  const l = lvl[Math.max(0,s-1)];
+  document.getElementById('s-fill').style.cssText = `width:${l.w};background:${l.c}`;
+  const lbl = document.getElementById('s-lbl');
+  lbl.textContent = v ? l.t : ''; lbl.style.color = l.c;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const emailInp = document.querySelector('#pane-register input[name="email"]');
+  if (emailInp) emailInp.addEventListener('blur', function() {});
+});
+
+function checkMatch() {
+  const pw=document.getElementById('reg-pw').value, cfm=document.getElementById('reg-cfm').value;
+  const lbl=document.getElementById('m-lbl');
+  if(!cfm){lbl.textContent='';return;}
+  lbl.textContent = pw===cfm ? '✓ Passwords match' : '✗ Do not match';
+  lbl.style.color  = pw===cfm ? '#2e7d32' : '#e53935';
+}
+</script>
+</body>
+</html>

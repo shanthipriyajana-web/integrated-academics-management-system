@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – VSU Timetable{% endblock %}
+
+{% block content %}
+<div class="page-hdr">
+  <div>
+    <h4><i class="bi bi-house-fill"></i>
+      {% if user.department %}
+        {{ user.department }} — Dashboard
+      {% else %}
+        Vikrama Simhapuri University, Nellore
+      {% endif %}
+    </h4>
+    <p>
+      Welcome back, <strong>{{ user.full_name }}</strong>!
+      {% if is_super %}
+        &nbsp;·&nbsp; <span style="color:#e65100;font-weight:700;"><i class="bi bi-eye me-1"></i>Main Assistant — Monitor</span>
+      {% elif user.department %}
+        &nbsp;·&nbsp; <span style="color:#1565c0;"><i class="bi bi-building-fill me-1"></i>{{ user.department }}</span>
+      {% endif %}
+    </p>
+  </div>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span class="role-pill role-{{ user.role }}" style="font-size:.88rem;padding:6px 14px;">
+      <i class="bi bi-{% if user.is_assistant %}shield-check{% elif user.is_faculty %}person-badge{% else %}mortarboard{% endif %}-fill me-1"></i>
+      {{ user.role|title }}
+    </span>
+    <form method="POST" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" style="
+        display:inline-flex;align-items:center;gap:6px;
+        padding:6px 16px;border-radius:20px;font-size:.85rem;font-weight:600;
+        background:#fff0ee;color:#c62828;border:1.5px solid #ef9a9a;
+        cursor:pointer;transition:.15s;
+      "
+      onmouseover="this.style.background='#ffebee';this.style.borderColor='#c62828';"
+      onmouseout="this.style.background='#fff0ee';this.style.borderColor='#ef9a9a';">
+        <i class="bi bi-box-arrow-right"></i> Sign Out
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Access banner ── -->
+{% if is_super %}
+<div class="alert d-flex gap-2 align-items-center mb-4" style="background:#fff8e1;color:#7b3800;border-left:4px solid #e65100;border-radius:12px;">
+  <i class="bi bi-eye-fill fs-5" style="color:#e65100;flex-shrink:0;"></i>
+  <div><strong>Main Assistant — Monitor Role</strong> — You can view timetables &amp; resources for all departments, and pre-register Department Assistants. Data entry (subjects, faculty, students) is handled exclusively by each Department Assistant.</div>
+</div>
+{% elif user.is_assistant %}
+<div class="alert alert-info d-flex gap-2 align-items-center mb-4">
+  <i class="bi bi-shield-check-fill fs-5"></i>
+  <div><strong>Department Assistant</strong> — <span style="color:#1565c0;font-weight:700;">{{ user.department }}</span> — You manage subjects, faculty, users and timetables for your department only.</div>
+</div>
+{% elif user.is_faculty %}
+<div class="alert d-flex gap-2 align-items-center mb-4" style="background:#e8f5e9;color:#1b5e20;border-radius:10px;">
+  <i class="bi bi-person-badge-fill fs-5"></i>
+  <div><strong>Faculty</strong>{% if user.department %} — <em>{{ user.department }}</em>{% endif %} — View the timetable with your classes highlighted in yellow.</div>
+</div>
+{% else %}
+<div class="alert d-flex gap-2 align-items-center mb-4" style="background:#fff8e1;color:#e65100;border-radius:10px;">
+  <i class="bi bi-mortarboard-fill fs-5"></i>
+  <div><strong>Student</strong>{% if user.department %} — <em>{{ user.department }}</em>{% endif %} — View the full timetable for your department.</div>
+</div>
+{% endif %}
+
+<!-- ── Stats row ── -->
+{% if user.is_assistant %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-chip">
+      <div class="stat-icon" style="background:#e8f0fe"><i class="bi bi-book-fill" style="color:#1565c0"></i></div>
+      <div><div class="val">{{ subject_count }}</div><div class="lbl">{% if is_super %}Total Subjects{% else %}Dept Subjects{% endif %}</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-chip">
+      <div class="stat-icon" style="background:#e8f5e9"><i class="bi bi-person-badge-fill" style="color:#2e7d32"></i></div>
+      <div><div class="val">{{ faculty_count }}</div><div class="lbl">Faculty Members</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-chip">
+      <div class="stat-icon" style="background:#fce4ec"><i class="bi bi-people-fill" style="color:#880e4f"></i></div>
+      <div><div class="val">{{ user_count }}</div><div class="lbl">{% if is_super %}All Users{% else %}Dept Users{% endif %}</div></div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-chip">
+      <div class="stat-icon" style="background:#fff8e1"><i class="bi bi-calendar3" style="color:#e65100"></i></div>
+      <div><div class="val">{{ years|length }}</div><div class="lbl">Academic Years</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Super-assistant: per-department overview ── -->
+{% if is_super and dept_stats %}
+<div class="card mb-4">
+  <div class="card-hdr"><i class="bi bi-building-fill"></i> Departments Overview</div>
+  <div class="card-body p-0">
+    <table class="table tbl mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Department</th>
+          <th class="text-center">Subjects</th>
+          <th class="text-center">Users</th>
+          <th class="text-center">Academic Years</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dept_stats %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td class="fw-bold">
+            <i class="bi bi-building-fill me-1" style="color:#1565c0"></i>{{ d.name }}
+          </td>
+          <td class="text-center"><span class="badge" style="background:#e8f0fe;color:#1565c0;">{{ d.subjects }}</span></td>
+          <td class="text-center"><span class="badge" style="background:#fce4ec;color:#880e4f;">{{ d.users }}</span></td>
+          <td class="text-center"><span class="badge" style="background:#fff8e1;color:#e65100;">{{ d.years }}</span></td>
+          <td>
+            <a href="{% url 'manage_subjects' %}?dept={{ d.name }}" class="btn btn-sm btn-outline-success py-0 px-2">
+              <i class="bi bi-book-fill"></i> Subjects
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted p-4">No departments found. Add subjects to get started.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- ── Quick action cards ── -->
+<div class="row g-4">
+  {% if not is_super %}
+  <div class="col-md-{% if user.is_assistant %}4{% else %}6{% endif %}">
+    <div class="card h-100">
+      <div class="card-body text-center py-5">
+        <div style="font-size:2.8rem;color:#1565c0;margin-bottom:12px"><i class="bi bi-calendar3"></i></div>
+        <h5 class="fw-bold">View Timetable</h5>
+        <p class="text-muted" style="font-size:.85rem">
+          {% if user.is_faculty %}Your scheduled classes are highlighted in yellow.
+          {% elif user.is_student %}Full week timetable for your department.
+          {% else %}Generate and view timetable for {{ user.department }}.{% endif %}
+        </p>
+        <a href="{% url 'timetable' %}" class="btn btn-primary px-4 rounded-pill mt-1">Open Timetable</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if user.is_assistant %}
+  {% if user.is_dept_assistant %}
+  {# Dept Assistant: full management cards #}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body text-center py-5">
+        <div style="font-size:2.8rem;color:#2e7d32;margin-bottom:12px"><i class="bi bi-book-fill"></i></div>
+        <h5 class="fw-bold">Manage Subjects</h5>
+        <p class="text-muted" style="font-size:.85rem">
+          Add, edit or remove subjects for <strong>{{ user.department }}</strong>.
+        </p>
+        <a href="{% url 'manage_subjects' %}" class="btn btn-success px-4 rounded-pill mt-1">Manage Subjects</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body text-center py-5">
+        <div style="font-size:2.8rem;color:#6a1b9a;margin-bottom:12px"><i class="bi bi-person-badge-fill"></i></div>
+        <h5 class="fw-bold">Manage Faculty</h5>
+        <p class="text-muted" style="font-size:.85rem">Add or update faculty members and their short codes.</p>
+        <a href="{% url 'manage_faculty' %}" class="btn px-4 rounded-pill mt-1" style="background:#6a1b9a;color:white;">Manage Faculty</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body text-center py-5">
+        <div style="font-size:2.8rem;color:#e65100;margin-bottom:12px"><i class="bi bi-people-fill"></i></div>
+        <h5 class="fw-bold">Manage Users</h5>
+        <p class="text-muted" style="font-size:.85rem">
+          Create and manage students &amp; faculty for <strong>{{ user.department }}</strong>.
+        </p>
+        <a href="{% url 'manage_users' %}" class="btn btn-warning px-4 rounded-pill mt-1">Manage Users</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  {# Main Assistant: monitor only — single action card to manage dept assistants #}
+  <div class="col-md-4">
+    <div class="card h-100" style="border:2px solid #fff3e0;">
+      <div class="card-body text-center py-5">
+        <div style="font-size:2.8rem;color:#e65100;margin-bottom:12px"><i class="bi bi-person-gear"></i></div>
+        <h5 class="fw-bold">Dept Assistants</h5>
+        <p class="text-muted" style="font-size:.85rem">
+          Pre-register Department Assistants. Each Dept Assistant independently manages their own department's data.
+        </p>
+        <a href="{% url 'manage_users' %}" class="btn btn-warning px-4 rounded-pill mt-1">Manage Dept Assistants</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100" style="border:2px solid #f5f5f5;opacity:.75;">
+      <div class="card-body text-center py-5">
+        <div style="font-size:2.8rem;color:#bdbdbd;margin-bottom:12px"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+        <h5 class="fw-bold text-muted">Django Admin</h5>
+        <p class="text-muted" style="font-size:.85rem">Advanced database management via the built-in Django admin panel.</p>
+        <a href="/admin/" target="_blank" class="btn btn-outline-secondary px-4 rounded-pill mt-1">Open Admin Panel</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+
+<!-- ── Schedule structure (hidden for Main Assistant) ── -->
+{% if not is_super %}
+<div class="card mt-4">
+  <div class="card-hdr"><i class="bi bi-clock"></i> Daily Schedule Structure</div>
+  <div class="card-body">
+    <div class="row text-center g-2">
+      {% for slot in morning_slots %}
+      <div class="col">
+        <div class="p-2 rounded-3" style="background:#e8f0fe;">
+          <div class="fw-bold" style="color:#1565c0;font-size:.88rem;">{{ slot }}</div>
+          <small class="text-muted">Morning</small>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="col">
+        <div class="p-2 rounded-3" style="background:#fff8e1;">
+          <div class="fw-bold" style="color:#e65100;font-size:.88rem;">13:00–14:00</div>
+          <small class="text-muted">Lunch</small>
+        </div>
+      </div>
+      {% for slot in afternoon_slots %}
+      <div class="col">
+        <div class="p-2 rounded-3" style="background:#e8f0fe;">
+          <div class="fw-bold" style="color:#1565c0;font-size:.88rem;">{{ slot }}</div>
+          <small class="text-muted">Afternoon</small>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="text-muted mt-3 mb-0" style="font-size:.83rem">
+      <i class="bi bi-info-circle me-1"></i>
+      Subjects with <strong>"Lab"</strong> in their name → scheduled as <strong>3 consecutive hours</strong>.
+    </p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

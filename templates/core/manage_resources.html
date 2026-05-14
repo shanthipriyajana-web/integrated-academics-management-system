@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% block title %}Manage Resources – VSU Timetable{% endblock %}
+
+{% block content %}
+<div class="page-hdr">
+  <div>
+    <h4><i class="bi bi-cloud-upload-fill"></i> Manage Resources</h4>
+    <p>Upload and manage Syllabus &amp; Old Question Papers</p>
+  </div>
+</div>
+
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{% if msg.tags == 'error' %}danger{% elif msg.tags == 'warning' %}warning{% else %}success{% endif %} py-2 small mb-3">{{ msg }}</div>
+  {% endfor %}
+{% endif %}
+
+{% if is_super %}
+<div class="card mb-4">
+  <div class="card-body d-flex align-items-center gap-3 flex-wrap">
+    <strong style="font-size:.85rem;"><i class="bi bi-building me-1"></i>Department:</strong>
+    {% for d in all_depts %}
+      <a href="?dept={{ d }}" class="badge {% if d == selected_dept %}bg-primary{% else %}bg-light text-dark border{% endif %} text-decoration-none px-3 py-2" style="font-size:.78rem;">{{ d }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+  <!-- ── Upload Syllabus ── -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3" style="color:var(--primary);"><i class="bi bi-journal-plus me-2"></i>Upload / Replace Syllabus</h6>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="upload_syllabus">
+          {% if is_super %}
+          <div class="mb-2">
+            <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-building me-1"></i>Department</label>
+            <select name="department" class="form-select form-select-sm">
+              {% for d in all_depts %}<option value="{{ d }}" {% if d == selected_dept %}selected{% endif %}>{{ d }}</option>{% endfor %}
+            </select>
+          </div>
+          {% else %}
+          <input type="hidden" name="department" value="{{ user_dept }}">
+          {% endif %}
+          <div class="row g-2 mb-2">
+            <div class="col">
+              <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-calendar3 me-1"></i>Academic Year</label>
+              <div class="input-group input-group-sm">
+                <select name="academic_year" id="syl-year-select" class="form-select form-select-sm" required>
+                  <option value="">— Select Year —</option>
+                  {% for y in all_academic_years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+                </select>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-2"
+                        title="Add new year" onclick="openAddYear('syl-year-select','syl-new-year-row')">
+                  <i class="bi bi-plus-circle"></i>
+                </button>
+              </div>
+              <div id="syl-new-year-row" class="input-group input-group-sm mt-1 d-none">
+                <input type="text" id="syl-new-year-input" class="form-control form-control-sm" placeholder="e.g. 2025-26">
+                <button type="button" class="btn btn-success btn-sm px-2" onclick="addYear('syl-year-select','syl-new-year-input','syl-new-year-row')">
+                  <i class="bi bi-check-lg"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-2" onclick="closeAddYear('syl-new-year-row')">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col">
+              <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-mortarboard me-1"></i>Semester</label>
+              <select name="semester" class="form-select form-select-sm" required>
+                <option value="">— Select —</option>
+                {% for val,label in semester_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-card-text me-1"></i>Title / Description</label>
+            <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. B.Tech CSE Sem III Syllabus 2024-25" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-file-earmark-pdf me-1"></i>File (PDF)</label>
+            <input type="file" name="file" class="form-control form-control-sm" accept=".pdf,.doc,.docx" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-upload me-1"></i>Upload Syllabus</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Upload Question Paper ── -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3" style="color:var(--primary);"><i class="bi bi-file-earmark-plus me-2"></i>Upload Question Paper</h6>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="upload_paper">
+          {% if is_super %}
+          <div class="mb-2">
+            <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-building me-1"></i>Department</label>
+            <select name="department" class="form-select form-select-sm">
+              {% for d in all_depts %}<option value="{{ d }}" {% if d == selected_dept %}selected{% endif %}>{{ d }}</option>{% endfor %}
+            </select>
+          </div>
+          {% else %}
+          <input type="hidden" name="department" value="{{ user_dept }}">
+          {% endif %}
+          <div class="row g-2 mb-2">
+            <div class="col">
+              <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-calendar3 me-1"></i>Academic Year</label>
+              <div class="input-group input-group-sm">
+                <select name="academic_year" id="paper-year-select" class="form-select form-select-sm" required>
+                  <option value="">— Select Year —</option>
+                  {% for y in all_academic_years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+                </select>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-2"
+                        title="Add new year" onclick="openAddYear('paper-year-select','paper-new-year-row')">
+                  <i class="bi bi-plus-circle"></i>
+                </button>
+              </div>
+              <div id="paper-new-year-row" class="input-group input-group-sm mt-1 d-none">
+                <input type="text" id="paper-new-year-input" class="form-control form-control-sm" placeholder="e.g. 2025-26">
+                <button type="button" class="btn btn-success btn-sm px-2" onclick="addYear('paper-year-select','paper-new-year-input','paper-new-year-row')">
+                  <i class="bi bi-check-lg"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-2" onclick="closeAddYear('paper-new-year-row')">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col">
+              <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-mortarboard me-1"></i>Semester</label>
+              <select name="semester" class="form-select form-select-sm" required>
+                <option value="">— Select —</option>
+                {% for val,label in semester_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col">
+              <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-book me-1"></i>Subject Name</label>
+              <input type="text" name="subject_name" class="form-control form-control-sm" placeholder="e.g. Data Structures" required>
+            </div>
+            <div class="col">
+              <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-hash me-1"></i>Subject Code</label>
+              <input type="text" name="subject_code" class="form-control form-control-sm" placeholder="e.g. CS301">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-clipboard-check me-1"></i>Exam Type</label>
+            <input type="text" name="exam_type" class="form-control form-control-sm" placeholder="e.g. Mid-1, Mid-2, End-Sem">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-file-earmark-pdf me-1"></i>File (PDF)</label>
+            <input type="file" name="file" class="form-control form-control-sm" accept=".pdf,.doc,.docx" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-upload me-1"></i>Upload Paper</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Existing Uploads ── -->
+<div class="row g-4 mt-1">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3" style="color:var(--primary);">
+          <i class="bi bi-journal-bookmark-fill me-2" style="color:#1565c0;"></i>Uploaded Syllabi
+          <span class="badge bg-secondary">{{ syllabi|length }}</span>
+        </h6>
+        {% if syllabi %}
+          {% for s in syllabi %}
+          <div class="d-flex align-items-start justify-content-between p-2 mb-2 rounded-3" style="background:#f0f4f9;border-left:3px solid #1565c0;">
+            <div class="d-flex gap-2 align-items-start">
+              <div class="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                   style="width:34px;height:34px;background:linear-gradient(135deg,#1a237e,#1565c0);">
+                <i class="bi bi-journal-bookmark-fill text-white" style="font-size:.85rem;"></i>
+              </div>
+              <div>
+                <div class="fw-bold" style="font-size:.82rem;">{{ s.title }}</div>
+                <div class="text-muted" style="font-size:.71rem;">
+                  <i class="bi bi-building me-1"></i>{{ s.department }} &nbsp;·&nbsp;
+                  <i class="bi bi-mortarboard me-1"></i>Sem {{ s.semester }} &nbsp;·&nbsp;
+                  <i class="bi bi-calendar3 me-1"></i>{{ s.academic_year }}
+                </div>
+                <div class="text-muted" style="font-size:.69rem;"><i class="bi bi-person me-1"></i>{{ s.uploaded_by|default:"—" }} on {{ s.uploaded_at|date:"d M Y" }}</div>
+              </div>
+            </div>
+            <div class="d-flex gap-1 ms-2 flex-shrink-0">
+              <a href="{{ s.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary" style="padding:3px 8px;font-size:.75rem;" title="View"><i class="bi bi-eye"></i></a>
+              <form method="post" onsubmit="return confirm('Delete this syllabus?')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_syllabus">
+                <input type="hidden" name="item_id" value="{{ s.pk }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" style="padding:3px 8px;font-size:.75rem;" title="Delete"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-journal-x fs-3 mb-2 d-block text-secondary"></i>
+            <span style="font-size:.82rem;">No syllabi uploaded yet.</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3" style="color:var(--primary);">
+          <i class="bi bi-file-earmark-text-fill me-2" style="color:#1976d2;"></i>Uploaded Question Papers
+          <span class="badge bg-secondary">{{ papers|length }}</span>
+        </h6>
+        {% if papers %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" style="font-size:.78rem;">
+            <thead style="background:#f8f9ff;">
+              <tr>
+                <th><i class="bi bi-book me-1"></i>Subject</th>
+                <th><i class="bi bi-clipboard-check me-1"></i>Exam</th>
+                <th><i class="bi bi-mortarboard me-1"></i>Sem</th>
+                <th><i class="bi bi-calendar3 me-1"></i>Year</th>
+                <th><i class="bi bi-person me-1"></i>By</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in papers %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:28px;height:28px;background:linear-gradient(135deg,#0d47a1,#1976d2);">
+                      <i class="bi bi-file-earmark-text-fill text-white" style="font-size:.7rem;"></i>
+                    </div>
+                    <div>
+                      <span class="fw-bold">{{ p.subject_name }}</span>
+                      {% if p.subject_code %}<br><span class="text-muted" style="font-size:.68rem;">{{ p.subject_code }}</span>{% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>{{ p.exam_type|default:"—" }}</td>
+                <td>{{ p.semester }}</td>
+                <td>{{ p.academic_year }}</td>
+                <td class="text-muted">{{ p.uploaded_by|default:"—" }}</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{{ p.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary" style="padding:2px 7px;font-size:.73rem;" title="View"><i class="bi bi-eye"></i></a>
+                    <form method="post" onsubmit="return confirm('Delete this question paper?')">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_paper">
+                      <input type="hidden" name="item_id" value="{{ p.pk }}">
+                      <button type="submit" class="btn btn-sm btn-outline-danger" style="padding:2px 7px;font-size:.73rem;" title="Delete"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-file-earmark-x fs-3 mb-2 d-block text-secondary"></i>
+            <span style="font-size:.82rem;">No question papers uploaded yet.</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Dynamic year dropdown: add new year and persist across all selects on the page
+const allYears = [{% for y in all_academic_years %}"{{ y }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+
+function openAddYear(selectId, rowId) {
+  document.getElementById(rowId).classList.remove('d-none');
+  document.getElementById(rowId).previousElementSibling.querySelector('select').removeAttribute('required');
+  const inp = document.getElementById(rowId).querySelector('input');
+  if (inp) inp.focus();
+}
+
+function closeAddYear(rowId) {
+  document.getElementById(rowId).classList.add('d-none');
+  document.getElementById(rowId).previousElementSibling.querySelector('select').setAttribute('required','');
+}
+
+function addYear(selectId, inputId, rowId) {
+  const input = document.getElementById(inputId);
+  const val   = input.value.trim();
+  if (!val) { input.focus(); return; }
+
+  // Validate format loosely: e.g. 2025-26 or 2025-2026
+  if (!/^\d{4}-\d{2,4}$/.test(val)) {
+    input.classList.add('is-invalid');
+    input.title = 'Use format like 2025-26';
+    return;
+  }
+  input.classList.remove('is-invalid');
+
+  // Add to ALL year selects on the page if not already present
+  const allSelects = document.querySelectorAll('select[name="academic_year"]');
+  allSelects.forEach(sel => {
+    const exists = Array.from(sel.options).some(o => o.value === val);
+    if (!exists) {
+      // Insert in sorted descending order
+      const opt = new Option(val, val);
+      let inserted = false;
+      for (let i = 1; i < sel.options.length; i++) {
+        if (val > sel.options[i].value) {
+          sel.insertBefore(opt, sel.options[i]);
+          inserted = true;
+          break;
+        }
+      }
+      if (!inserted) sel.add(opt);
+    }
+    // Select the new year in the target select
+    if (sel.id === selectId) sel.value = val;
+  });
+
+  input.value = '';
+  closeAddYear(rowId);
+}
+</script>
+{% endblock %}
+{% endblock %}

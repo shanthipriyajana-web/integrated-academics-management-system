@@ -1,0 +1,506 @@
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<div class="page-hdr">
+  <div>
+    <h4><i class="bi bi-people-fill"></i> {% if is_super %}Manage Department Assistants{% else %}Manage Users{% endif %}</h4>
+    <p>
+      {% if is_super %}
+        <span class="badge me-1" style="background:#fff8e1;color:#e65100;font-size:.75rem;"><i class="bi bi-eye me-1"></i>Monitor Role</span>
+        As <strong>Main Assistant</strong>, you oversee the system. You can pre-register <strong>Department Assistants</strong> only.
+        Each Department Assistant manages their own dept's subjects, faculty, users, and resources.
+      {% else %}
+        Pre-register users for <strong>{{ user_dept }}</strong>. They self-register using their email.
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+<!-- How it works banner -->
+{% if is_super %}
+<div class="alert d-flex gap-3 align-items-start mb-4"
+     style="background:#fff8e1;border-left:4px solid #e65100;border-radius:12px;color:#7b3800;">
+  <i class="bi bi-eye-fill fs-5 mt-1" style="color:#e65100;flex-shrink:0;"></i>
+  <div style="font-size:.85rem;">
+    <strong>Main Assistant — Monitor &amp; Coordinator Role:</strong>
+    You can pre-register <strong>Department Assistants</strong> here &nbsp;→&nbsp;
+    Each Dept Assistant then independently manages their own department's subjects, faculty, users, and resources.
+    You <em>cannot</em> edit department data directly — that responsibility belongs to each Dept Assistant.
+  </div>
+</div>
+{% else %}
+<div class="alert d-flex gap-3 align-items-start mb-4"
+     style="background:#e8f0fe;border-left:4px solid #1565c0;border-radius:12px;color:#1a237e;">
+  <i class="bi bi-info-circle-fill fs-5 mt-1" style="color:#1565c0;flex-shrink:0;"></i>
+  <div style="font-size:.85rem;">
+    <strong>How Registration Works:</strong>
+    You enter the user's email here &nbsp;→&nbsp;
+    They visit the <strong>Register tab</strong> on the login page &nbsp;→&nbsp;
+    They enter their pre-registered email, set a password &amp; fill their details &nbsp;→&nbsp;
+    Account is activated. <em>Programme year for students is set by the assistant at pre-registration.</em>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+  <!-- Add form -->
+  <div class="col-md-4">
+    <div class="card" id="add-form">
+      <div class="card-body">
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add">
+
+          <div class="mb-3">
+            <label class="form-label">Email Address <small class="text-muted fw-normal">(used as login)</small></label>
+            <input type="email" name="email" class="form-control" placeholder="user@vsu.edu" required autofocus>
+            <small class="text-muted">
+              {% if is_super %}Enter the email for the Dept Assistant or Faculty.{% else %}Student/Faculty will self-register with this email.{% endif %}
+            </small>
+          </div>
+
+          {% if is_super %}
+          <div class="mb-3">
+            <label class="form-label">Department</label>
+            <input type="text" name="department" id="dept-input" class="form-control"
+                   placeholder="e.g. Computer Science" list="dept-list"
+                   oninput="updateAssistantHint()">
+            <datalist id="dept-list">
+              {% for d in all_depts %}<option value="{{ d }}">{% endfor %}
+            </datalist>
+            <small class="text-muted">Department for the Dept Assistant or Faculty being registered.</small>
+          </div>
+          {% else %}
+          <input type="hidden" name="department" value="{{ user_dept }}">
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            {% if not is_super %}
+            {# Dept assistant: can only add students or faculty for their dept #}
+            <select name="role" id="role-select" class="form-select" required onchange="toggleAcademicYear()">
+              <option value="student">Student</option>
+              <option value="faculty">Faculty</option>
+            </select>
+            {% else %}
+            {# Main assistant: can ONLY add dept assistants — monitor role #}
+            <select name="role" id="role-select" class="form-select" required onchange="updateRoleFields()">
+              <option value="assistant">Dept Assistant — Department management access</option>
+            </select>
+            <small class="text-muted">Only Department Assistants can be pre-registered here. Dept Assistants add their own dept's faculty and students.</small>
+            <div id="assistant-hint" class="mt-2 p-2 rounded d-none" style="font-size:.8rem;">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>
+              <span id="assistant-hint-text"></span>
+            </div>
+            {% endif %}
+          </div>
+
+          {% if not is_super %}
+          <div class="mb-3" id="academic-year-row">
+            <label class="form-label">
+              Programme Year &nbsp;<small class="text-muted fw-normal">e.g. 2025-27</small>
+            </label>
+            <input type="text" name="academic_year" id="academic-year-input"
+                   class="form-control" placeholder="e.g. 2025-27"
+                   pattern="\d{4}-\d{2}" title="Format: YYYY-YY  e.g. 2025-27">
+            <small class="text-muted">Set here once — <strong>not asked again</strong> at registration.</small>
+          </div>
+          {% endif %}
+
+          <button class="btn btn-success w-100 fw-bold">
+            <i class="bi bi-send-check me-1"></i> Pre-Register User
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-hdr"><i class="bi bi-shield-check"></i> What You Can Register</div>
+      <div class="card-body p-3" style="font-size:.82rem;">
+        {% if is_super %}
+        <div class="mb-2 p-2 rounded" style="background:#e8f5e9;">
+          <strong style="color:#2e7d32;"><i class="bi bi-person-gear me-1"></i>Dept Assistant</strong><br>
+          <span class="text-muted">One per department. Once registered, they manage all subjects, faculty, users &amp; resources for their dept independently.</span>
+        </div>
+        <div class="p-2 rounded" style="background:#fff3e0;border:1px dashed #e65100;">
+          <strong style="color:#e65100;"><i class="bi bi-lock-fill me-1"></i>Faculty &amp; Students</strong><br>
+          <span class="text-muted">Registered by each Department Assistant within their own dept. Not accessible here.</span>
+        </div>
+        {% else %}
+        <div class="mb-2 p-2 rounded" style="background:#f3e5f5;">
+          <strong style="color:#6a1b9a;"><i class="bi bi-mortarboard-fill me-1"></i>Student</strong><br>
+          <span class="text-muted">Enter their email and programme year (e.g. 2025-27). The year is locked in here — not asked again at registration.</span>
+        </div>
+        <div class="p-2 rounded" style="background:#e3f2fd;">
+          <strong style="color:#1565c0;"><i class="bi bi-person-badge me-1"></i>Faculty</strong><br>
+          <span class="text-muted">View timetable with own classes highlighted in yellow.</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div class="col-md-8">
+
+    {% if is_super %}
+    {# ── MAIN ASSISTANT: Pending Dept Assistants + Dept-wise user overview ── #}
+
+    <!-- Pending Dept Assistant pre-registrations -->
+    {% if pending %}
+    <div class="card mb-4">
+      <div class="card-hdr" style="background:#fff8e1;color:#e65100;border-radius:14px 14px 0 0;">
+        <i class="bi bi-hourglass-split"></i>
+        Dept Assistants Awaiting Registration
+        <span class="badge ms-2" style="background:#e65100;color:white;">{{ pending|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0 tbl">
+          <thead>
+            <tr><th>#</th><th>Email</th><th>Department</th><th>Pre-registered On</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for slot in pending %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+              <td style="font-size:.85rem;font-weight:600;">{{ slot.email }}</td>
+              <td style="font-size:.8rem;">
+                <span class="badge" style="background:#e8f0fe;color:#1565c0;">{{ slot.department }}</span>
+              </td>
+              <td style="font-size:.78rem;color:#888;">{{ slot.created_at|date:"d M Y" }}</td>
+              <td>
+                <form method="POST" class="d-inline"
+                      onsubmit="return confirm('Revoke pre-registration for {{ slot.email }}?')">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="revoke_pending">
+                  <input type="hidden" name="slot_id" value="{{ slot.pk }}">
+                  <button class="btn btn-sm btn-outline-warning py-0 px-2 fw-bold">
+                    <i class="bi bi-x-circle me-1"></i>Revoke
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Department-wise user overview accordion -->
+    <div class="card">
+      <div class="card-hdr" style="border-radius:14px 14px 0 0;">
+        <i class="bi bi-building"></i> Users by Department
+        <small class="ms-2 fw-normal text-muted" style="font-size:.75rem;">Read-only view · managed by each Dept Assistant</small>
+      </div>
+      <div class="card-body p-2">
+
+        {% if dept_wise_users %}
+        <div class="accordion accordion-flush" id="deptAccordion">
+          {% for row in dept_wise_users %}
+          <div class="accordion-item" style="border:none;border-bottom:1px solid #e0e0e0;">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed py-3 px-3 fw-semibold"
+                      type="button" data-bs-toggle="collapse"
+                      data-bs-target="#dept-{{ forloop.counter }}"
+                      style="font-size:.9rem;background:#f8f9fa;">
+                <span style="display:flex;align-items:center;gap:10px;width:100%;">
+                  <i class="bi bi-building-fill" style="color:#1565c0;"></i>
+                  <span>{{ row.dept }}</span>
+                  <span class="ms-auto d-flex gap-2">
+                    {% if row.assistant %}
+                      <span class="badge" style="background:#e8f5e9;color:#2e7d32;font-weight:600;">
+                        <i class="bi bi-person-gear me-1"></i>Asst: {{ row.assistant.full_name }}
+                      </span>
+                    {% elif row.pending_assistant %}
+                      <span class="badge" style="background:#fff8e1;color:#e65100;">
+                        <i class="bi bi-hourglass-split me-1"></i>Asst pending
+                      </span>
+                    {% else %}
+                      <span class="badge" style="background:#ffebee;color:#c62828;">
+                        <i class="bi bi-exclamation-circle me-1"></i>No assistant
+                      </span>
+                    {% endif %}
+                    <span class="badge bg-primary">
+                      {{ row.users|length }} user{{ row.users|length|pluralize }}
+                    </span>
+                  </span>
+                </span>
+              </button>
+            </h2>
+            <div id="dept-{{ forloop.counter }}" class="accordion-collapse collapse"
+                 data-bs-parent="#deptAccordion">
+              <div class="accordion-body p-0">
+
+                <!-- Dept Assistant info bar -->
+                <div class="px-3 py-2 d-flex align-items-center gap-3 flex-wrap"
+                     style="background:#f0f7ff;border-bottom:1px solid #e3f2fd;font-size:.82rem;">
+                  <strong style="color:#1565c0;white-space:nowrap;"><i class="bi bi-person-gear me-1"></i>Dept Assistant:</strong>
+                  {% if row.assistant %}
+                    <span class="fw-semibold">{{ row.assistant.full_name }}</span>
+                    <span class="text-muted">{{ row.assistant.email }}</span>
+                    <span class="badge ms-auto" style="background:#e8f5e9;color:#2e7d32;">Active</span>
+                  {% elif row.pending_assistant %}
+                    <span class="text-muted fst-italic">{{ row.pending_assistant.email }}</span>
+                    <span class="badge ms-auto" style="background:#fff8e1;color:#e65100;"><i class="bi bi-hourglass-split me-1"></i>Pending registration</span>
+                  {% else %}
+                    <span class="text-danger fst-italic">No Dept Assistant registered yet.</span>
+                    <a href="#add-form" class="btn btn-sm btn-outline-warning py-0 px-2 ms-auto"
+                       style="font-size:.75rem;"
+                       onclick="document.getElementById('dept-input').value='{{ row.dept }}';updateAssistantHint();document.getElementById('dept-input').focus();">
+                      <i class="bi bi-person-plus me-1"></i>Add Assistant
+                    </a>
+                  {% endif %}
+                </div>
+
+                <!-- Users in this dept -->
+                {% if row.users or row.pending_users %}
+                <table class="table table-hover mb-0 tbl" style="font-size:.82rem;">
+                  <thead>
+                    <tr><th>#</th><th>Name / Email</th><th>Role</th><th>Programme</th><th>Joined</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for u in row.users %}
+                    <tr>
+                      <td class="text-muted">{{ forloop.counter }}</td>
+                      <td>
+                        <div class="fw-semibold">{{ u.full_name }}</div>
+                        <div class="text-muted" style="font-size:.75rem;">{{ u.email }}</div>
+                      </td>
+                      <td><span class="role-pill role-{{ u.role }}" style="font-size:.72rem;">{{ u.role|title }}</span></td>
+                      <td>
+                        {% if u.role == 'student' and u.academic_year %}
+                          <span class="badge" style="background:#f3e5f5;color:#6a1b9a;">{{ u.academic_year }}</span>
+                        {% else %}
+                          <span class="text-muted">—</span>
+                        {% endif %}
+                      </td>
+                      <td class="text-muted">{{ u.date_joined|date:"d M Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% for slot in row.pending_users %}
+                    <tr style="background:#fffde7;">
+                      <td class="text-muted">—</td>
+                      <td>
+                        <div class="fst-italic text-muted">{{ slot.email }}</div>
+                        <div style="font-size:.72rem;color:#e65100;"><i class="bi bi-hourglass-split me-1"></i>Pending registration</div>
+                      </td>
+                      <td><span class="role-pill role-{{ slot.role }}" style="font-size:.72rem;">{{ slot.role|title }}</span></td>
+                      <td><span class="text-muted">—</span></td>
+                      <td class="text-muted">{{ slot.created_at|date:"d M Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% else %}
+                <div class="text-center text-muted py-3" style="font-size:.82rem;">
+                  <i class="bi bi-person-x me-1"></i> No users registered yet for this department.
+                </div>
+                {% endif %}
+
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted p-4" style="font-size:.85rem;">
+          <i class="bi bi-building me-2"></i>
+          No departments found. Dept Assistants will appear here once registered.
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    {% else %}
+    {# ── DEPT ASSISTANT: Standard pending + registered users view ── #}
+
+    <!-- Pending pre-registrations -->
+    <div class="card mb-4">
+      <div class="card-hdr" style="background:#fff8e1;color:#e65100;border-radius:14px 14px 0 0;">
+        <i class="bi bi-hourglass-split"></i>
+        Awaiting Self-Registration
+        {% if pending %}
+          <span class="badge ms-2" style="background:#e65100;color:white;">{{ pending|length }}</span>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        {% if pending %}
+        <table class="table table-hover mb-0 tbl">
+          <thead>
+            <tr>
+              <th>#</th><th>Email</th><th>Role</th><th>Programme</th><th>Pre-registered On</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for slot in pending %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+              <td style="font-size:.85rem;font-weight:600;">{{ slot.email }}</td>
+              <td><span class="role-pill role-{{ slot.role }}">{{ slot.role|title }}</span></td>
+              <td style="font-size:.78rem;">
+                {% if slot.role == 'student' %}
+                  <span class="badge" style="background:#f3e5f5;color:#6a1b9a;">
+                    {{ slot.academic_year|default:"—" }}
+                  </span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td style="font-size:.78rem;color:#888;">{{ slot.created_at|date:"d M Y" }}</td>
+              <td>
+                <form method="POST" class="d-inline"
+                      onsubmit="return confirm('Revoke pre-registration for {{ slot.email }}? They will no longer be able to register.')">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="revoke_pending">
+                  <input type="hidden" name="slot_id" value="{{ slot.pk }}">
+                  <button class="btn btn-sm btn-outline-warning py-0 px-2 fw-bold">
+                    <i class="bi bi-x-circle me-1"></i>Revoke
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center text-muted p-4" style="font-size:.85rem;">
+          <i class="bi bi-check-circle-fill me-2 text-success"></i>
+          No pending pre-registrations.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Registered users -->
+    <div class="card">
+      <div class="card-hdr">
+        <i class="bi bi-people-fill"></i>
+        {{ user_dept }} — Registered Users
+        <span class="badge bg-primary ms-2">{{ users|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0 tbl">
+          <thead>
+            <tr>
+              <th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Programme</th><th>Joined</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr {% if u.pk == user.pk %}style="background:#f0f7ff"{% endif %}>
+              <td class="text-muted">{{ forloop.counter }}</td>
+              <td class="fw-bold">{{ u.full_name }}</td>
+              <td style="font-size:.8rem;">{{ u.email }}</td>
+              <td><span class="role-pill role-{{ u.role }}">{{ u.role|title }}</span></td>
+              <td style="font-size:.78rem;">
+                {% if u.role == 'student' and u.academic_year %}
+                  <span class="badge" style="background:#f3e5f5;color:#6a1b9a;">{{ u.academic_year }}</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td style="font-size:.78rem;color:#888;">{{ u.date_joined|date:"d M Y" }}</td>
+              <td>
+                {% if u.pk == user.pk %}
+                  <span class="badge bg-secondary">You</span>
+                {% else %}
+                  <form method="POST" class="d-inline"
+                        onsubmit="return confirm('Delete user {{ u.email }}? This cannot be undone.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="user_id" value="{{ u.pk }}">
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2 fw-bold">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted p-4">No registered users yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+const deptAssistants = {};
+{% for u in users %}{% if u.role == 'assistant' %}{% if u.department %}deptAssistants["{{ u.department }}"] = true;{% endif %}{% endif %}{% endfor %}
+
+const pendingAssistants = {};
+{% for slot in pending %}{% if slot.role == 'assistant' %}{% if slot.department %}pendingAssistants["{{ slot.department }}"] = true;{% endif %}{% endif %}{% endfor %}
+
+{% if not is_super %}
+function toggleAcademicYear() {
+  const role  = document.getElementById('role-select').value;
+  const row   = document.getElementById('academic-year-row');
+  const input = document.getElementById('academic-year-input');
+  if (!row) return;
+  if (role === 'student') {
+    row.style.display = '';
+    input.required = true;
+  } else {
+    row.style.display = 'none';
+    input.required = false;
+    input.value = '';
+  }
+}
+document.addEventListener('DOMContentLoaded', toggleAcademicYear);
+{% endif %}
+
+{% if is_super %}
+function updateRoleFields() {
+  updateAssistantHint();
+}
+document.addEventListener('DOMContentLoaded', function(){
+  const sel = document.getElementById('role-select');
+  if(sel) sel.addEventListener('change', updateRoleFields);
+  updateRoleFields();
+});
+{% endif %}
+
+function updateAssistantHint() {
+  const roleSelect = document.getElementById('role-select');
+  const hintBox    = document.getElementById('assistant-hint');
+  const hintText   = document.getElementById('assistant-hint-text');
+  const deptInput  = document.getElementById('dept-input');
+  if (!roleSelect || !hintBox) return;
+
+  const role = roleSelect.value;
+  const dept = deptInput ? deptInput.value.trim() : '';
+
+  if (role !== 'assistant') { hintBox.classList.add('d-none'); return; }
+
+  hintBox.classList.remove('d-none');
+
+  if (!dept) {
+    hintBox.style.cssText = 'background:#fff3e0;color:#e65100;font-size:.8rem;border-radius:8px;padding:8px 12px;';
+    hintText.textContent  = 'Please enter a department name to register a Dept Assistant.';
+    return;
+  }
+
+  if (deptAssistants[dept]) {
+    hintBox.style.cssText = 'background:#ffebee;color:#c62828;font-size:.8rem;border-radius:8px;padding:8px 12px;';
+    hintText.textContent  = `A Dept Assistant for "${dept}" is already registered. Only ONE is allowed.`;
+  } else if (pendingAssistants[dept]) {
+    hintBox.style.cssText = 'background:#fff3e0;color:#e65100;font-size:.8rem;border-radius:8px;padding:8px 12px;';
+    hintText.textContent  = `A Dept Assistant for "${dept}" is already pending self-registration.`;
+  } else {
+    hintBox.style.cssText = 'background:#e8f5e9;color:#2e7d32;font-size:.8rem;border-radius:8px;padding:8px 12px;';
+    hintText.textContent  = `Will pre-register a Dept Assistant slot for "${dept}".`;
+  }
+}
+</script>
+{% endblock %}
+{% endblock %}

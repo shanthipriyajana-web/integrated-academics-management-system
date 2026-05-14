@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% load core_tags %}
+{% block title %}Timetable – VSU{% endblock %}
+
+{% block extra_css %}
+<style>
+  .tt-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Fully plain Excel-style table — screen and print ── */
+  .tt-table {
+    border-collapse: collapse;
+    font-size: .8rem;
+    width: 100%;
+    min-width: 860px;
+  }
+  .tt-table th, .tt-table td {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    vertical-align: middle;
+    text-align: center;
+    background: #fff;
+    color: #000;
+  }
+  .tt-table thead th {
+    background: #d9d9d9;
+    font-weight: 700;
+    font-size: .76rem;
+    color: #000;
+  }
+  .tt-table .day-col {
+    background: #f2f2f2;
+    font-weight: 800;
+    color: #000;
+    min-width: 80px;
+  }
+  .tt-table .sem-col {
+    background: #efefef;
+    font-weight: 700;
+    color: #000;
+    width: 38px;
+  }
+  .tt-table .lunch-col {
+    background: #f5f5f5;
+    color: #444;
+    font-size: .74rem;
+    font-style: italic;
+    min-width: 72px;
+  }
+
+  /* Cell text — plain, no pills, no colours */
+  .cell-plain {
+    display: block;
+    font-size: .76rem;
+    line-height: 1.45;
+    color: #000;
+    text-align: center;
+  }
+  .cell-plain strong { display: block; font-size: .78rem; }
+  .cell-plain small  { display: block; color: #444; font-size: .68rem; }
+  .cell-lab-mark     { display: block; color: #555; font-size: .63rem; font-style: italic; }
+  .cell-empty        { color: #bbb; font-size: .9rem; }
+
+  /* Faculty highlight — ONLY yellow, nothing else gets colour */
+  td.cell-mine { background: #ffff99 !important; }
+
+  /* Workload table */
+  .tbl { border-collapse: collapse; font-size: .82rem; width: 100%; }
+  .tbl th, .tbl td { border: 1px solid #000; padding: 6px 10px; }
+  .tbl thead th { background: #d9d9d9; font-weight: 700; color: #000; }
+  .tbl .my-row td { background: #ffff99; }
+  .tbl tbody tr:hover td { background: #f9f9f9; }
+  .tbl .my-row:hover td { background: #ffff99; }
+
+  /* Print — identical look, force colours */
+  @media print {
+    .sidebar, .page-hdr, .no-print, .alert { display: none !important; }
+    .main { margin-left: 0 !important; padding: 0 !important; }
+    .card { box-shadow: none !important; border: none !important; margin: 0 !important; }
+    .card-body { padding: 0 !important; }
+    .card-hdr { display: none !important; }
+    .tt-table th, .tt-table td { font-size: 8pt !important; padding: 3px 4px !important; border: 1px solid #000 !important; }
+    .tt-table thead th { background: #d9d9d9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tt-table .day-col { background: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tt-table .sem-col { background: #efefef !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    td.cell-mine { background: #ffff99 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tbl .my-row td { background: #ffff99 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tbl th, .tbl td { border: 1px solid #000 !important; font-size: 8pt !important; padding: 3px 5px !important; }
+    .tbl thead th { background: #d9d9d9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { size: A3 landscape; margin: 1cm; }
+    body { font-family: Arial, sans-serif !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hdr">
+  <div>
+    <h4><i class="bi bi-calendar3"></i>
+      {% if current_dept %}{{ current_dept }} — {% elif user.department %}{{ user.department }} — {% endif %}Timetable
+    </h4>
+    <p>
+      Academic Year: <strong>{{ year }}</strong>
+      {% if semesters %}&nbsp;&middot;&nbsp; Semesters: <strong>{{ semesters|join:" &amp; " }}</strong>{% endif %}
+      {% if user.is_faculty and faculty_code %}&nbsp;&middot;&nbsp; Your classes: <span class="badge" style="background:#f9a825;color:#333;">{{ faculty_code }}</span>{% endif %}
+    </p>
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center no-print">
+    {% if is_super and all_depts %}
+    <form method="GET" class="d-flex gap-2">
+      <select name="dept" class="form-select form-select-sm" style="width:180px" onchange="this.form.submit()">
+        {% for d in all_depts %}
+          <option value="{{ d }}" {% if d == current_dept %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+    <form method="POST" class="d-flex gap-2">
+      {% csrf_token %}
+      {% if current_dept %}<input type="hidden" name="dept" value="{{ current_dept }}">{% endif %}
+      <select name="year" class="form-select form-select-sm" style="width:140px" onchange="this.form.submit()">
+        {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <button onclick="window.print()" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-printer"></i> Print
+    </button>
+  </div>
+</div>
+
+{% if user.is_faculty %}
+<div class="alert d-flex gap-2 align-items-center mb-3 no-print" style="background:#fff9c4;border:1px solid #f9a825;border-radius:8px;font-size:.85rem;">
+  <i class="bi bi-star-fill" style="color:#f9a825;"></i>
+  <div>Your classes are <strong>highlighted in yellow</strong>.</div>
+</div>
+{% endif %}
+
+{% if not timetable %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    No subjects found for <strong>{{ year }}</strong>.
+    {% if user.is_assistant %}
+      <a href="{% url 'manage_subjects' %}?year={{ year }}" class="alert-link">Add subjects here</a>
+    {% endif %}
+  </div>
+{% else %}
+
+<!-- Timetable Card -->
+<div class="card mb-4">
+  <div class="card-hdr no-print">
+    <img src="https://upload.wikimedia.org/wikipedia/en/7/70/Vikrama_Simhapuri_University_Logo.png"
+         style="height:36px;margin-right:10px;vertical-align:middle;">
+    {% if user.department %}{{ user.department }}{% else %}Vikrama Simhapuri University{% endif %}
+    &nbsp;&middot;&nbsp; <span style="color:#1976d2;">{{ year }}</span>
+  </div>
+  <div class="card-body p-2 tt-wrap">
+    <table class="table tt-table">
+      <thead>
+        <tr>
+          <th style="min-width:72px;">Day</th>
+          <th style="width:38px;">Sem</th>
+          {% for slot in morning_slots %}
+          <th>{{ slot }}</th>
+          {% endfor %}
+          <th style="min-width:68px;">Lunch</th>
+          {% for slot in afternoon_slots %}
+          <th>{{ slot }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for day in days %}
+          {% for sem in semesters %}
+            {% with sem_slots=timetable|get_item:day|get_item:sem %}
+            <tr>
+              {% if forloop.first %}
+                <td class="day-col" rowspan="{{ semesters|length }}">{{ day }}</td>
+              {% endif %}
+
+              <td class="sem-col">{{ sem }}</td>
+
+              {# Morning slot 0 #}
+              {% with cell=sem_slots|index:0 %}
+              <td {% if user.is_faculty and cell and cell.faculty == faculty_code %}class="cell-mine"{% endif %}>
+                {% if cell %}
+                  <span class="cell-plain">
+                    <strong>{{ cell.code }}</strong>
+                    <small>{{ cell.fac_name }}</small>
+                    {% if cell.type == 'lab' %}<span class="cell-lab-mark">Lab ×3</span>{% endif %}
+                  </span>
+                {% else %}<span class="cell-empty">–</span>{% endif %}
+              </td>
+              {% endwith %}
+
+              {# Morning slot 1 #}
+              {% with cell=sem_slots|index:1 %}
+              <td {% if user.is_faculty and cell and cell.faculty == faculty_code %}class="cell-mine"{% endif %}>
+                {% if cell %}
+                  <span class="cell-plain">
+                    <strong>{{ cell.code }}</strong>
+                    <small>{{ cell.fac_name }}</small>
+                    {% if cell.type == 'lab' %}<span class="cell-lab-mark">Lab ×3</span>{% endif %}
+                  </span>
+                {% else %}<span class="cell-empty">–</span>{% endif %}
+              </td>
+              {% endwith %}
+
+              {# Morning slot 2 #}
+              {% with cell=sem_slots|index:2 %}
+              <td {% if user.is_faculty and cell and cell.faculty == faculty_code %}class="cell-mine"{% endif %}>
+                {% if cell %}
+                  <span class="cell-plain">
+                    <strong>{{ cell.code }}</strong>
+                    <small>{{ cell.fac_name }}</small>
+                    {% if cell.type == 'lab' %}<span class="cell-lab-mark">Lab ×3</span>{% endif %}
+                  </span>
+                {% else %}<span class="cell-empty">–</span>{% endif %}
+              </td>
+              {% endwith %}
+
+              {# Lunch — spans all sem rows for this day #}
+              {% if forloop.first %}
+                <td class="lunch-col" rowspan="{{ semesters|length }}">
+                  13:00–14:00<br><small>Lunch</small>
+                </td>
+              {% endif %}
+
+              {# Afternoon slot 3 #}
+              {% with cell=sem_slots|index:3 %}
+              <td {% if user.is_faculty and cell and cell.faculty == faculty_code %}class="cell-mine"{% endif %}>
+                {% if cell %}
+                  <span class="cell-plain">
+                    <strong>{{ cell.code }}</strong>
+                    <small>{{ cell.fac_name }}</small>
+                    {% if cell.type == 'lab' %}<span class="cell-lab-mark">Lab ×3</span>{% endif %}
+                  </span>
+                {% else %}<span class="cell-empty">–</span>{% endif %}
+              </td>
+              {% endwith %}
+
+              {# Afternoon slot 4 #}
+              {% with cell=sem_slots|index:4 %}
+              <td {% if user.is_faculty and cell and cell.faculty == faculty_code %}class="cell-mine"{% endif %}>
+                {% if cell %}
+                  <span class="cell-plain">
+                    <strong>{{ cell.code }}</strong>
+                    <small>{{ cell.fac_name }}</small>
+                    {% if cell.type == 'lab' %}<span class="cell-lab-mark">Lab ×3</span>{% endif %}
+                  </span>
+                {% else %}<span class="cell-empty">–</span>{% endif %}
+              </td>
+              {% endwith %}
+
+              {# Afternoon slot 5 #}
+              {% with cell=sem_slots|index:5 %}
+              <td {% if user.is_faculty and cell and cell.faculty == faculty_code %}class="cell-mine"{% endif %}>
+                {% if cell %}
+                  <span class="cell-plain">
+                    <strong>{{ cell.code }}</strong>
+                    <small>{{ cell.fac_name }}</small>
+                    {% if cell.type == 'lab' %}<span class="cell-lab-mark">Lab ×3</span>{% endif %}
+                  </span>
+                {% else %}<span class="cell-empty">–</span>{% endif %}
+              </td>
+              {% endwith %}
+
+            </tr>
+            {% endwith %}
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Faculty Workload Table -->
+<div class="card">
+  <div class="card-hdr no-print">
+    <i class="bi bi-person-lines-fill"></i> Faculty Workload &ndash; {{ year }}
+  </div>
+  <div class="card-body p-0">
+    <table class="tbl table mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Code</th>
+          <th>Faculty Name</th>
+          <th>Subjects</th>
+          <th class="text-center">Theory Hrs</th>
+          <th class="text-center">Practical Hrs</th>
+          <th class="text-center">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for code, data in workload.items %}
+        <tr {% if user.is_faculty and faculty_code == code %}class="my-row"{% endif %}>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td><span class="badge" style="background:#1a237e;font-size:.8rem;">{{ code }}</span></td>
+          <td class="fw-bold">{{ data.name }}</td>
+          <td style="font-size:.78rem;">{{ data.subjects|join:", " }}</td>
+          <td class="text-center">{{ data.theory }}</td>
+          <td class="text-center">{{ data.practical }}</td>
+          <td class="text-center fw-bold">{{ data.total }}</td>
+        </tr>
+        {% endfor %}
+        <tr style="background:#f2f2f2;font-weight:700;">
+          <td colspan="6" class="text-end">GRAND TOTAL</td>
+          <td class="text-center">{% sum_workload workload %}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}

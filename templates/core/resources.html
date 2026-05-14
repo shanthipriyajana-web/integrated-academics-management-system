@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}Resources – VSU Timetable{% endblock %}
+
+{% block content %}
+<div class="page-hdr">
+  <div>
+    <h4><i class="bi bi-folder2-open-fill"></i> Academic Resources</h4>
+    <p>
+      {% if is_student %}
+        {{ user.department }} &nbsp;·&nbsp; Syllabus &amp; Question Papers
+      {% else %}
+        Syllabus &amp; Old Question Papers
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{% if msg.tags == 'error' %}danger{% elif msg.tags == 'warning' %}warning{% else %}success{% endif %} py-2 small mb-3">{{ msg }}</div>
+  {% endfor %}
+{% endif %}
+
+{% if is_student %}
+<!-- ── STUDENT: can access ALL resources for their department ── -->
+
+<!-- Filter bar for students -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-auto">
+        <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-calendar3 me-1"></i>Academic Year</label>
+        <select name="year" id="year-select-student" class="form-select form-select-sm" style="min-width:130px;">
+          <option value="">All Years</option>
+          {% for y in all_years %}<option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-mortarboard me-1"></i>Semester</label>
+        <select name="semester" class="form-select form-select-sm">
+          <option value="">All Semesters</option>
+          {% for val,label in semester_choices %}<option value="{{ val }}" {% if val == selected_sem %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+      </div>
+      {% if selected_year or selected_sem %}
+      <div class="col-auto">
+        <a href="?" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-circle me-1"></i>Clear</a>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if not syllabi and not papers %}
+<div class="card p-4 text-center text-muted">
+  <i class="bi bi-inbox fs-2 mb-2"></i>
+  <p>No resources have been uploaded for your department yet.<br>Please check back later or contact your department assistant.</p>
+</div>
+{% endif %}
+
+<!-- Resource Type Tabs -->
+{% if syllabi or papers %}
+<ul class="nav nav-pills mb-3 gap-2" id="resourceTabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-bs-toggle="pill" href="#tab-syllabus">
+      <i class="bi bi-journal-bookmark-fill me-1"></i> Syllabus
+      <span class="badge bg-white text-primary ms-1">{{ syllabi|length }}</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="pill" href="#tab-papers">
+      <i class="bi bi-file-earmark-text-fill me-1"></i> Question Papers
+      <span class="badge bg-white text-primary ms-1">{{ papers|length }}</span>
+    </a>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <!-- Syllabus Tab -->
+  <div class="tab-pane fade show active" id="tab-syllabus">
+    {% if syllabi %}
+    <div class="row g-3">
+      {% for s in syllabi %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100" style="border-left:4px solid var(--primary);">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-start gap-3 mb-2">
+              <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                   style="width:46px;height:46px;background:linear-gradient(135deg,#1a237e,#1565c0);">
+                <i class="bi bi-journal-bookmark-fill text-white fs-5"></i>
+              </div>
+              <div>
+                <div class="fw-bold" style="font-size:.9rem;color:var(--primary);">{{ s.title }}</div>
+                <div class="text-muted" style="font-size:.74rem;">Semester {{ s.semester }}</div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap mt-1 mb-3">
+              <span class="badge rounded-pill" style="background:#e8f0fe;color:#1565c0;">
+                <i class="bi bi-calendar3 me-1"></i>{{ s.academic_year }}
+              </span>
+              <span class="badge rounded-pill" style="background:#f3e5f5;color:#6a1b9a;">
+                <i class="bi bi-mortarboard me-1"></i>Sem {{ s.semester }}
+              </span>
+            </div>
+            <div class="mt-auto">
+              <div class="text-muted mb-2" style="font-size:.7rem;"><i class="bi bi-clock me-1"></i>Uploaded {{ s.uploaded_at|date:"d M Y" }}</div>
+              <a href="{{ s.file.url }}" target="_blank" class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-download me-1"></i> Download Syllabus
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card p-4 text-center text-muted">
+      <i class="bi bi-journal-x fs-2 mb-2 text-secondary"></i>
+      <p>No syllabus found for the selected filter.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Question Papers Tab -->
+  <div class="tab-pane fade" id="tab-papers">
+    {% if papers %}
+    <div class="row g-3">
+      {% for p in papers %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100" style="border-left:4px solid #1976d2;">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-start gap-3 mb-2">
+              <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                   style="width:46px;height:46px;background:linear-gradient(135deg,#0d47a1,#1976d2);">
+                <i class="bi bi-file-earmark-text-fill text-white fs-5"></i>
+              </div>
+              <div>
+                <div class="fw-bold" style="font-size:.9rem;color:var(--primary);">{{ p.subject_name }}</div>
+                {% if p.subject_code %}
+                <span class="badge" style="background:#e3f2fd;color:#1565c0;font-size:.68rem;">{{ p.subject_code }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap mt-1 mb-3">
+              <span class="badge rounded-pill" style="background:#e8f0fe;color:#1565c0;">
+                <i class="bi bi-calendar3 me-1"></i>{{ p.academic_year }}
+              </span>
+              <span class="badge rounded-pill" style="background:#f3e5f5;color:#6a1b9a;">
+                <i class="bi bi-mortarboard me-1"></i>Sem {{ p.semester }}
+              </span>
+              {% if p.exam_type %}
+              <span class="badge rounded-pill" style="background:#e8f5e9;color:#2e7d32;">
+                <i class="bi bi-clipboard-check me-1"></i>{{ p.exam_type }}
+              </span>
+              {% endif %}
+            </div>
+            <div class="mt-auto">
+              <div class="text-muted mb-2" style="font-size:.7rem;"><i class="bi bi-clock me-1"></i>Uploaded {{ p.uploaded_at|date:"d M Y" }}</div>
+              <a href="{{ p.file.url }}" target="_blank" class="btn btn-sm w-100" style="background:#1565c0;color:white;">
+                <i class="bi bi-download me-1"></i> Download Paper
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card p-4 text-center text-muted">
+      <i class="bi bi-file-earmark-x fs-2 mb-2 text-secondary"></i>
+      <p>No question papers found for the selected filter.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- ── STAFF / ASSISTANT: filterable ── -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      {% if is_super %}
+      <div class="col-auto">
+        <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-building me-1"></i>Department</label>
+        <select name="dept" class="form-select form-select-sm" onchange="this.form.submit()">
+          {% for d in all_depts %}<option value="{{ d }}" {% if d == selected_dept %}selected{% endif %}>{{ d }}</option>{% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-auto">
+        <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-calendar3 me-1"></i>Academic Year</label>
+        <select name="year" id="year-select" class="form-select form-select-sm" style="min-width:130px;">
+          <option value="">All Years</option>
+          {% for y in all_years %}<option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label fw-bold" style="font-size:.78rem;"><i class="bi bi-mortarboard me-1"></i>Semester</label>
+        <select name="semester" class="form-select form-select-sm">
+          <option value="">All Semesters</option>
+          {% for val,label in semester_choices %}<option value="{{ val }}" {% if val == selected_sem %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Resource cards (staff view) -->
+<ul class="nav nav-pills mb-3 gap-2" id="staffResourceTabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-bs-toggle="pill" href="#staff-syllabus">
+      <i class="bi bi-journal-bookmark-fill me-1"></i> Syllabus
+      <span class="badge bg-white text-primary ms-1">{{ syllabi|length }}</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="pill" href="#staff-papers">
+      <i class="bi bi-file-earmark-text-fill me-1"></i> Question Papers
+      <span class="badge bg-white text-primary ms-1">{{ papers|length }}</span>
+    </a>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="staff-syllabus">
+    {% if syllabi %}
+    <div class="row g-3">
+      {% for s in syllabi %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100" style="border-left:4px solid var(--primary);">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-start gap-3 mb-2">
+              <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                   style="width:46px;height:46px;background:linear-gradient(135deg,#1a237e,#1565c0);">
+                <i class="bi bi-journal-bookmark-fill text-white fs-5"></i>
+              </div>
+              <div>
+                <div class="fw-bold" style="font-size:.9rem;color:var(--primary);">{{ s.title }}</div>
+                <div class="text-muted" style="font-size:.74rem;">{{ s.department }}</div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap mt-1 mb-3">
+              <span class="badge rounded-pill" style="background:#e8f0fe;color:#1565c0;"><i class="bi bi-calendar3 me-1"></i>{{ s.academic_year }}</span>
+              <span class="badge rounded-pill" style="background:#f3e5f5;color:#6a1b9a;"><i class="bi bi-mortarboard me-1"></i>Sem {{ s.semester }}</span>
+            </div>
+            <div class="mt-auto">
+              <div class="text-muted mb-2" style="font-size:.7rem;"><i class="bi bi-clock me-1"></i>{{ s.uploaded_at|date:"d M Y" }}</div>
+              <a href="{{ s.file.url }}" target="_blank" class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-download me-1"></i> Download
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted p-3" style="font-size:.83rem;">No syllabus found for the selected filter.</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="staff-papers">
+    {% if papers %}
+    <div class="row g-3">
+      {% for p in papers %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100" style="border-left:4px solid #1976d2;">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-start gap-3 mb-2">
+              <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                   style="width:46px;height:46px;background:linear-gradient(135deg,#0d47a1,#1976d2);">
+                <i class="bi bi-file-earmark-text-fill text-white fs-5"></i>
+              </div>
+              <div>
+                <div class="fw-bold" style="font-size:.9rem;color:var(--primary);">{{ p.subject_name }}</div>
+                {% if p.subject_code %}<span class="badge" style="background:#e3f2fd;color:#1565c0;font-size:.68rem;">{{ p.subject_code }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap mt-1 mb-3">
+              <span class="badge rounded-pill" style="background:#e8f0fe;color:#1565c0;"><i class="bi bi-calendar3 me-1"></i>{{ p.academic_year }}</span>
+              <span class="badge rounded-pill" style="background:#f3e5f5;color:#6a1b9a;"><i class="bi bi-mortarboard me-1"></i>Sem {{ p.semester }}</span>
+              {% if p.exam_type %}<span class="badge rounded-pill" style="background:#e8f5e9;color:#2e7d32;"><i class="bi bi-clipboard-check me-1"></i>{{ p.exam_type }}</span>{% endif %}
+            </div>
+            <div class="mt-auto">
+              <div class="text-muted mb-2" style="font-size:.7rem;"><i class="bi bi-clock me-1"></i>{{ p.uploaded_at|date:"d M Y" }}</div>
+              <a href="{{ p.file.url }}" target="_blank" class="btn btn-sm w-100" style="background:#1565c0;color:white;">
+                <i class="bi bi-download me-1"></i> Download
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted p-3" style="font-size:.83rem;">No question papers found for the selected filter.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
