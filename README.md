@@ -1,4 +1,4 @@
-# Conflict-Aware Timetable Management System
+# Integrated Academics Management System
 
 A university-level platform with role-based access built with Django and MySQL.  
 The Main Assistant manages departments and grants access to Department Assistants.  
@@ -68,5 +68,5 @@ Visit: http://127.0.0.1:8000
 
 ## Notes
 
-- This project uses **MySQL only** — SQLite has been removed.
+- This project uses **MySQL only** 
 - Never commit your `.env` file (it is in `.gitignore`).
