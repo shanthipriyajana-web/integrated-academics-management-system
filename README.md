@@ -82,11 +82,10 @@ python manage.py migrate
 
 ### 5. Start the server
 
+Run the Django development server:
+
 ```bash
 python manage.py runserver
-```
-
-Visit: http://127.0.0.1:8000
 
 ---
 ## Project Demo Video
