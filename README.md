@@ -89,7 +89,7 @@ python manage.py runserver
 Visit: http://127.0.0.1:8000
 
 ---
-## project Demo Vide0
+## Project Demo Video
 [watch the project demo video](https://drive.google.com/file/d/1dhMl6TkbxuTnoDMN0cxHrciTKUsKD_ML/view?usp=sharing)
 ---
 
