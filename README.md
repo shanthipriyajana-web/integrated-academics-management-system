@@ -1,18 +1,40 @@
+# Integrated Academic Management System
 
-
-# Integrated Academics Management System
-
-A university-level platform with role-based access built with Django and MySQL.  
-The Main Assistant manages departments and grants access to Department Assistants.  
-Departments manage faculty, students, generate semester timetables, and upload syllabus and previous papers.  
+A university-level platform with role-based access built using Django and MySQL.
+The Main Assistant manages departments and grants access to Department Assistants.
+Departments manage faculty, students, generate semester timetables, and upload syllabus and previous papers.
 Students can view timetables and download academic resources.
+
+---
+
+## Features
+
+* Role-Based Authentication
+* Automated Timetable Scheduling
+* Faculty & Student Dashboards
+* Academic Resource Management
+* Syllabus & Previous Papers Upload
+* Department-Wise Access Control
+* Conflict-Free Timetable Generation
+
+---
+
+## Technologies Used
+
+* Python
+* Django
+* React.js
+* MySQL
+* HTML
+* CSS
+* JavaScript
 
 ---
 
 ## Requirements
 
-- Python 3.10+
-- MySQL 8.0+
+* Python 3.10+
+* MySQL 8.0+
 
 ---
 
@@ -44,10 +66,10 @@ cp .env.example .env          # Mac/Linux
 
 Edit `.env` and set your MySQL password:
 
-```
+```env
 MYSQL_DATABASE=academics_management_system
 MYSQL_USER=root
-MYSQL_PASSWORD=Priyas$5
+MYSQL_PASSWORD=your_password
 MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
 ```
@@ -68,7 +90,17 @@ Visit: http://127.0.0.1:8000
 
 ---
 
+## Project Demo Video
+
+Watch the working demo of the Integrated Academic Management System below:
+
+(https://drive.google.com/file/d/1dhMl6TkbxuTnoDMN0cxHrciTKUsKD_ML/view?usp=sharing)
+
+---
+
 ## Notes
 
-- This project uses **MySQL only** 
-- Never commit your `.env` file (it is in `.gitignore`).
+* This project uses MySQL only
+* Never commit your `.env` file (it is included in `.gitignore`)
+
+
