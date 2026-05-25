@@ -1,3 +1,5 @@
+
+
 # Integrated Academics Management System
 
 A university-level platform with role-based access built with Django and MySQL.  
