@@ -93,7 +93,7 @@ Visit: http://127.0.0.1:8000
 ## Project Demo Video
 
 Watch the working demo of the Integrated Academic Management System below:
-
+[Watch Project Demo Video]
 (https://drive.google.com/file/d/1dhMl6TkbxuTnoDMN0cxHrciTKUsKD_ML/view?usp=sharing)
 
 ---
