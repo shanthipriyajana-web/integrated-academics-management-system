@@ -89,11 +89,8 @@ python manage.py runserver
 Visit: http://127.0.0.1:8000
 
 ---
-
-## Project Demo Video
-
-Watch the working demo of the Integrated Academic Management System below:
-[Watch Project Demo Video](https://drive.google.com/file/d/1dhMl6TkbxuTnoDMN0cxHrciTKUsKD_ML/view?usp=sharing)
+## project Demo Vide0
+[watch the project demo video](https://drive.google.com/file/d/1dhMl6TkbxuTnoDMN0cxHrciTKUsKD_ML/view?usp=sharing)
 ---
 
 ## Notes
