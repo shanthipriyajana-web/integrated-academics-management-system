@@ -3,9 +3,8 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'vsu-django-secret-key-change-in-production-xK9pLmQ2024'
-
-DEBUG = True
+SECRET_KEY = 'VSU@MCA2024-26'
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
