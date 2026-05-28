@@ -11,4 +11,7 @@ media/
 .DS_Store
 Thumbs.db
 .vscode/
-.idea/
+.idea/	
+Procfile.txt
+academics_backup.sql
+staticfiles/
