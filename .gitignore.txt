@@ -15,3 +15,4 @@ Thumbs.db
 Procfile.txt
 academics_backup.sql
 staticfiles/
+echo screenshots/project_Demo.mp4 >> .gitignore
